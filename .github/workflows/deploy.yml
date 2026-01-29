@@ -10,45 +10,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ✅ Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # ✅ Step 2: Setup Java 17
       - name: Setup Java 17
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: "17"
 
+      # ✅ Step 3: Build jar with Maven
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
+      # ✅ Step 4: Rename jar for deployment
       - name: Rename jar
         run: mv target/*.jar target/modbusserverapp.jar
 
-      # ✅ Write SSH key to file (Best Fix)
-      - name: Write SSH key
-        run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
-          chmod 600 key.pem
-
-      # ✅ Copy jar to EC2
+      # ✅ Step 5: Copy jar to EC2 (Direct key usage)
       - name: Copy jar to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key_path: key.pem
+          key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           source: "target/modbusserverapp.jar"
           target: "/home/ubuntu/app"
 
-      # ✅ Restart service
+      # ✅ Step 6: Restart Spring Boot service
       - name: Restart Spring Boot service
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key_path: key.pem
+          key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
             sudo systemctl restart modbusapp
