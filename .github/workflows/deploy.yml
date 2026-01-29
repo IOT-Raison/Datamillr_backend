@@ -25,21 +25,31 @@ jobs:
       - name: Rename jar
         run: mv target/*.jar target/modbusserverapp.jar
 
+      # ✅ Write SSH key to file (Best Fix)
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      # ✅ Copy jar to EC2
       - name: Copy jar to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key_path: key.pem
+          port: 22
           source: "target/modbusserverapp.jar"
           target: "/home/ubuntu/app"
 
+      # ✅ Restart service
       - name: Restart Spring Boot service
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key_path: key.pem
+          port: 22
           script: |
             sudo systemctl restart modbusapp
             sudo systemctl status modbusapp --no-pager
