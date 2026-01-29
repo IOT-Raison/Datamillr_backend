@@ -10,26 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout Code
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Setup Java
       - name: Setup Java 17
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: "17"
 
-      # 3. Build Jar
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
-      # 4. Rename Jar
       - name: Rename jar
         run: mv target/*.jar target/modbusserverapp.jar
 
-      # 5. Setup SSH Key Correctly
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -37,16 +32,13 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # 6. Ensure folder exists + Upload jar
-            - name: Upload jar to EC2
+      - name: Upload jar to EC2
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "sudo mkdir -p /home/ubuntu/app"
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "sudo chown ubuntu:ubuntu /home/ubuntu/app"
-
           scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no target/modbusserverapp.jar ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/app/modbusserverapp.jar
 
-
-      # 7. Restart Spring Boot Service
       - name: Restart application
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "sudo systemctl restart modbusapp && sudo systemctl status modbusapp --no-pager"
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "sudo systemctl restart modbusapp"
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "sudo systemctl status modbusapp --no-pager"
