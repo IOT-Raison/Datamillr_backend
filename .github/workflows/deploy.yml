@@ -37,16 +37,13 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # 6. Copy Jar to EC2 using SCP (native)
+      # 6. Ensure folder exists + Upload jar (NO line breaks)
       - name: Upload jar to EC2
         run: |
-          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-          target/modbusserverapp.jar \
-          ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/app/modbusserverapp.jar
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "mkdir -p /home/ubuntu/app"
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no target/modbusserverapp.jar ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/app/modbusserverapp.jar
 
       # 7. Restart Spring Boot Service
       - name: Restart application
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-          ubuntu@${{ secrets.EC2_HOST }} \
-          "sudo systemctl restart modbusapp && sudo systemctl status modbusapp --no-pager"
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} "sudo systemctl restart modbusapp && sudo systemctl status modbusapp --no-pager"
