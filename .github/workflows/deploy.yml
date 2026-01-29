@@ -25,32 +25,32 @@ jobs:
       - name: Rename jar
         run: mv target/*.jar target/modbusserverapp.jar
 
-      # ✅ DEBUG STEP (Very Important)
-      - name: Debug EC2 Host Secret
-        run: |
-          echo "EC2_HOST=[${{ secrets.EC2_HOST }}]"
-
-      - name: Setup SSH
+      - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Prepare folder on EC2
+      - name: Prepare EC2 Folder
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-          sudo mkdir -p /home/ubuntu/app
-          sudo chown ubuntu:ubuntu /home/ubuntu/app
-          EOF
+          HOST="${{ secrets.EC2_HOST }}"
+          USER="${{ secrets.EC2_USER }}"
 
-      - name: Upload jar to EC2
-        run: |
-          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no target/modbusserverapp.jar ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/app/modbusserverapp.jar
+          ssh -i ~/.ssh/id_rsa $USER@$HOST "sudo mkdir -p /home/ubuntu/app"
+          ssh -i ~/.ssh/id_rsa $USER@$HOST "sudo chown ubuntu:ubuntu /home/ubuntu/app"
 
-      - name: Restart application
+      - name: Upload Jar to EC2
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-          sudo systemctl restart modbusapp
-          sudo systemctl status modbusapp --no-pager
-          EOF
+          HOST="${{ secrets.EC2_HOST }}"
+          USER="${{ secrets.EC2_USER }}"
+
+          scp -i ~/.ssh/id_rsa target/modbusserverapp.jar $USER@$HOST:/home/ubuntu/app/modbusserverapp.jar
+
+      - name: Restart Spring Boot Service
+        run: |
+          HOST="${{ secrets.EC2_HOST }}"
+          USER="${{ secrets.EC2_USER }}"
+
+          ssh -i ~/.ssh/id_rsa $USER@$HOST "sudo systemctl restart modbusapp"
+          ssh -i ~/.ssh/id_rsa $USER@$HOST "sudo systemctl status modbusapp --no-pager"
