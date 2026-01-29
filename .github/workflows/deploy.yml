@@ -25,6 +25,11 @@ jobs:
       - name: Rename jar
         run: mv target/*.jar target/modbusserverapp.jar
 
+      # ✅ DEBUG STEP (Very Important)
+      - name: Debug EC2 Host Secret
+        run: |
+          echo "EC2_HOST=[${{ secrets.EC2_HOST }}]"
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
